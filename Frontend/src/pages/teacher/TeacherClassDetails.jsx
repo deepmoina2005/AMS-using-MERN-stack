@@ -123,17 +123,46 @@ const TeacherClassDetails = () => {
     ).length;
   };
 
-  const StudentsButtonHaver = ({ row }) => {
-    return (
-      <BlueButton
-        size="small"
-        variant="contained"
-        onClick={() => navigate(`/Teacher/class/student/${row._id}`)}
-      >
-        View
-      </BlueButton>
-    );
+  const handleExportExcel = () => {
+    const table = document.getElementById("attendance-summary-table");
+    const tableHTML = table.outerHTML.replace(/ /g, "%20");
+
+    const filename = "Attendance_Summary.xls";
+    const downloadLink = document.createElement("a");
+    document.body.appendChild(downloadLink);
+    downloadLink.href = "data:application/vnd.ms-excel," + tableHTML;
+    downloadLink.download = filename;
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
+
+  const handlePrintOnlyTable = () => {
+    const printContents = document.getElementById("attendance-print-section").innerHTML;
+    const printWindow = window.open("", "", "height=600,width=1000");
+
+    printWindow.document.write("<html><head><title>Attendance Summary</title>");
+    printWindow.document.write(
+      "<style>table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 8px; } th { background: #f0f0f0; }</style>"
+    );
+    printWindow.document.write("</head><body>");
+    printWindow.document.write(printContents);
+    printWindow.document.write("</body></html>");
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const StudentsButtonHaver = ({ row }) => (
+    <BlueButton
+      size="small"
+      variant="contained"
+      onClick={() => navigate(`/Teacher/class/student/${row._id}`)}
+    >
+      View
+    </BlueButton>
+  );
 
   return (
     <div className="w-full px-4 py-6 min-h-screen bg-gray-50">
@@ -143,39 +172,41 @@ const TeacherClassDetails = () => {
         </h1>
 
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-          <input
+          <div className="flex flex-row gap-6">
+            <input
             type="text"
             placeholder="Search student..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border border-gray-300 rounded-md p-2 w-72 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
-          <div className="font-semibold text-gray-700 text-lg">
-            Total Sessions: {totalSessions}
+           <div className="flex flex-row gap-2">
+            <button
+              onClick={handlePrintOnlyTable}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition"
+            >
+              Print
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-md font-medium hover:bg-emerald-700 transition"
+            >
+              Export
+            </button>
+           </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="font-semibold text-gray-700 text-lg ml-4">
+              Total Sessions: {totalSessions}
+            </div>
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <svg
-              className="animate-spin h-10 w-10 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v8H4z"
-              ></path>
+            <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
           </div>
         ) : filteredStudents.length === 0 ? (
@@ -183,123 +214,122 @@ const TeacherClassDetails = () => {
             No students found in this class.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg shadow-sm">
-  <div className="flex flex-col md:flex-row gap-8 w-full">
-    
-    {/* Attendance Summary Table */}
-    <div className="overflow-x-auto">
-      <table className="min-w-[600px] table-auto border m-4 border-gray-300 rounded-md shadow-sm">
-        <thead className="bg-gray-100 sticky top-0 z-10 text-xs uppercase text-gray-600 font-semibold">
-          <tr>
-            <th className="px-6 py-3 text-left">Name</th>
-            <th className="px-6 py-3 text-left">Roll Number</th>
-            <th className="px-6 py-3 text-center text-green-700">Present</th>
-            <th className="px-6 py-3 text-center text-red-700">Absent</th>
-            <th className="px-6 py-3 text-center text-blue-700">Percentage %</th>
-            <th className="px-6 py-3 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-300 text-sm">
-          {filteredStudents.map((student) => {
-            const totalPresent = getAttendanceCount(student, "Present");
-            const totalAbsent = getAttendanceCount(student, "Absent");
-            const percentage = totalSessions > 0
-              ? ((totalPresent / totalSessions) * 100).toFixed(1)
-              : "0.0";
+          <>
+            <div className="overflow-x-auto rounded-lg shadow-sm">
+              <div className="flex flex-col md:flex-row gap-8 w-full">
 
-            return (
-              <tr key={student._id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 font-medium text-gray-900">{student.name}</td>
-                <td className="px-6 py-4 text-gray-800">{student.rollNum}</td>
-                <td className="px-6 py-4 text-center font-semibold text-green-700">{totalPresent}</td>
-                <td className="px-6 py-4 text-center font-semibold text-red-700">{totalAbsent}</td>
-                <td className="px-6 py-4 text-center font-semibold text-blue-700">{percentage}%</td>
-                <td className="px-6 py-4 text-center">
-                  <StudentsButtonHaver row={student} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                {/* Attendance Summary Table */}
+                <div id="attendance-print-section" className="overflow-x-auto">
+                  
+                  <table
+                    id="attendance-summary-table"
+                    className="min-w-[600px] table-auto border m-4 border-gray-300 rounded-md shadow-sm"
+                  >
+                    <thead className="bg-gray-100 text-xs uppercase text-gray-600 font-semibold">
+                      <tr>
+                        <th className="px-6 py-3 text-left">Name</th>
+                        <th className="px-6 py-3 text-left">Roll Number</th>
+                        <th className="px-6 py-3 text-center text-green-700">Present</th>
+                        <th className="px-6 py-3 text-center text-red-700">Absent</th>
+                        <th className="px-6 py-3 text-center text-blue-700">Percentage %</th>
+                        <th className="px-6 py-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-300 text-sm">
+                      {filteredStudents.map((student) => {
+                        const totalPresent = getAttendanceCount(student, "Present");
+                        const totalAbsent = getAttendanceCount(student, "Absent");
+                        const percentage = totalSessions > 0 ? ((totalPresent / totalSessions) * 100).toFixed(1) : "0.0";
 
-    {/* Attendance Input Table */}
-    <div className="overflow-x-auto">
-      <table className="min-w-[280px] table-auto border border-gray-300 rounded-md m-4 shadow-sm">
-        <thead className="bg-gray-100 sticky top-0 z-10 text-xs uppercase text-gray-600 font-semibold">
-          <tr>
-            <th className="px-6 py-3">
-              <div className="flex flex-row gap-2">
-                <label htmlFor="attendance-date" className="text-sm text-gray-700 font-medium">
-                  Attendance Date
-                </label>
-                <input
-                  id="attendance-date"
-                  type="date"
-                  value={attendanceDate}
-                  onChange={(e) => setAttendanceDate(e.target.value)}
-                  className="border border-gray-300 rounded-md p-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                        return (
+                          <tr key={student._id} className="hover:bg-gray-50 transition">
+                            <td className="px-6 py-4 font-medium text-gray-900">{student.name}</td>
+                            <td className="px-6 py-4 text-gray-800">{student.rollNum}</td>
+                            <td className="px-6 py-4 text-center font-semibold text-green-700">{totalPresent}</td>
+                            <td className="px-6 py-4 text-center font-semibold text-red-700">{totalAbsent}</td>
+                            <td className="px-6 py-4 text-center font-semibold text-blue-700">{percentage}%</td>
+                            <td className="px-6 py-4 text-center">
+                              <StudentsButtonHaver row={student} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Attendance Input Table */}
+                <div className="overflow-x-auto w-f">
+                  <table className="min-w-[280px] table-auto border border-gray-300 rounded-md m-4 shadow-sm">
+                    <thead className="bg-gray-100 text-xs uppercase text-gray-600 font-semibold">
+                      <tr>
+                        <th className="px-6 py-3">
+                          <div className="flex flex-row gap-2">
+                            <label htmlFor="attendance-date" className="text-sm text-gray-700 font-medium">
+                              Attendance Date
+                            </label>
+                            <input
+                              id="attendance-date"
+                              type="date"
+                              value={attendanceDate}
+                              onChange={(e) => setAttendanceDate(e.target.value)}
+                              className="border border-gray-300 rounded-md p-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-300 text-sm">
+                      {filteredStudents.map((student) => {
+                        const status = attendanceData[student._id];
+                        return (
+                          <tr key={student._id} className="hover:bg-gray-50 transition">
+                            <td className="px-14 py-4">
+                              <div className="flex gap-3">
+                                <button
+                                  className={`w-24 px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                                    status === "Present"
+                                      ? "bg-green-600 text-white hover:bg-green-700"
+                                      : "border border-green-600 text-green-600 hover:bg-green-100"
+                                  }`}
+                                  onClick={() => handleAttendance(student._id, "Present", student.name)}
+                                >
+                                  Present
+                                </button>
+                                <button
+                                  className={`w-24 px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                                    status === "Absent"
+                                      ? "bg-red-600 text-white hover:bg-red-700"
+                                      : "border border-red-600 text-red-600 hover:bg-red-100"
+                                  }`}
+                                  onClick={() => handleAttendance(student._id, "Absent", student.name)}
+                                >
+                                  Absent
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-300 text-sm">
-          {filteredStudents.map((student) => {
-            const status = attendanceData[student._id];
-            return (
-              <tr key={student._id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4">
-                  <div className="flex gap-3">
-                    <button
-                      className={`w-24 px-4 py-1.5 rounded-md text-sm font-semibold transition ${
-                        status === "Present"
-                          ? "bg-green-600 text-white hover:bg-green-700"
-                          : "border border-green-600 text-green-600 hover:bg-green-100"
-                      }`}
-                      onClick={() => handleAttendance(student._id, "Present", student.name)}
-                      aria-label="Mark Present"
-                    >
-                      Present
-                    </button>
-                    <button
-                      className={`w-24 px-4 py-1.5 rounded-md text-sm font-semibold transition ${
-                        status === "Absent"
-                          ? "bg-red-600 text-white hover:bg-red-700"
-                          : "border border-red-600 text-red-600 hover:bg-red-100"
-                      }`}
-                      onClick={() => handleAttendance(student._id, "Absent", student.name)}
-                      aria-label="Mark Absent"
-                    >
-                      Absent
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  </div>
 
-  {/* Submit Attendance Button */}
-  <div className="mt-6 flex justify-end m-4">
-    <button
-      onClick={handleSubmitAttendance}
-      disabled={!attendanceDate}
-      className={`px-6 py-2 text-white rounded-md font-semibold transition ${
-        attendanceDate
-          ? "bg-blue-600 hover:bg-blue-700"
-          : "bg-gray-400 cursor-not-allowed"
-      }`}
-    >
-      Submit Attendance
-    </button>
-  </div>
-</div>
-
+              {/* Submit Attendance Button */}
+              <div className="mt-6 flex justify-end m-4">
+                <button
+                  onClick={handleSubmitAttendance}
+                  disabled={!attendanceDate}
+                  className={`px-6 py-2 text-white rounded-md font-semibold transition ${
+                    attendanceDate ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Submit Attendance
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {error && (

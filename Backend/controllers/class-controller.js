@@ -55,22 +55,6 @@ const getSclassDetail = async (req, res) => {
     }
 }
 
-const getSclassStudents = async (req, res) => {
-    try {
-        let students = await Student.find({ sclassName: req.params.id })
-        if (students.length > 0) {
-            let modifiedStudents = students.map((student) => {
-                return { ...student._doc, password: undefined };
-            });
-            res.send(modifiedStudents);
-        } else {
-            res.send({ message: "No students found" });
-        }
-    } catch (err) {
-        res.status(500).json(err);
-    }
-}
-
 const deleteSclass = async (req, res) => {
     try {
         const deletedClass = await Sclass.findByIdAndDelete(req.params.id);

@@ -19,4 +19,4 @@ const noticeSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-module.exports = mongoose.model("notice", noticeSchema)
+module.exports = mongoose.model("Notice", noticeSchema)
